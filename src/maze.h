@@ -35,17 +35,23 @@ class KruskalsSquare {
             return x == other.x && y == other.y;
         }
 
+        KruskalsSquare* getParent() {
+            if (parent->id == id) return parent;
+
+            KruskalsSquare* higherParent = parent->getParent();
+            if (higherParent->id != parent->id) {
+                parent = higherParent;
+            }
+            return parent;
+        }
+
         void updateParent(KruskalsSquare* NewParent) {
             parent = NewParent;
-            for (KruskalsSquare* child : children) {
-                child->updateParent(NewParent);
-            }
-            while (children.size() != 0) children.pop_back();
         }
 
         int x = -1, y = -1, id = -1;
         KruskalsSquare* parent = nullptr;
-        std::vector<KruskalsSquare*> children;
+        // std::vector<KruskalsSquare*> children;
 };
 
 

@@ -74,8 +74,8 @@ void Maze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%4;
-    // int randGenID = 3;
+    // int randGenID = rand()%4;
+    int randGenID = 3;
     if (randGenID == 0) {
         while (GenGridDFS());
         SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
@@ -343,18 +343,14 @@ bool Maze::GenKruskals() {
     KruskalsSquare* secondSquare;
 
     if (x % 2 == 0) {
-        firstSquare = KruskalsGrid[x-1][y].parent;
-        secondSquare = KruskalsGrid[x+1][y].parent;
+        firstSquare = KruskalsGrid[x-1][y].getParent();
+        secondSquare = KruskalsGrid[x+1][y].getParent();
     } else if (y % 2 == 0) {
-        firstSquare = KruskalsGrid[x][y-1].parent;
-        secondSquare = KruskalsGrid[x][y+1].parent;
+        firstSquare = KruskalsGrid[x][y-1].getParent();
+        secondSquare = KruskalsGrid[x][y+1].getParent();
     }
     
     if (firstSquare->parent->id != secondSquare->parent->id) {
-        firstSquare->children.push_back(secondSquare);
-        for (KruskalsSquare* child : secondSquare->children) {
-            firstSquare->children.push_back(child);
-        }
         secondSquare->updateParent(firstSquare);
         // std::cout << " Updated: 1:" << firstSquare->parent->id << " 2:" << secondSquare->parent->id;
         for (int i = -1; i <= 1; i++) {
