@@ -3,10 +3,18 @@
 Maze::Maze(int width, int height, int gridSize, int seed) : width(width), height(height), gridSize(gridSize), seed(seed) {
     
     grid = new bool*[width];
+    // BFSIndex = new int*[width];
+    ComplexGrid = new ComplexSquare*[width];
     for (int x = 0; x < width; x++) {
         grid[x] = new bool[height];
+        // BFSIndex[x] = new int[height];
+        ComplexGrid[x] = new ComplexSquare[height];
         for (int y = 0; y < height; y++) {
             grid[x][y] = false;
+            // BFSIndex[x][y] = -1;
+            ComplexGrid[x][y].x = x;
+            ComplexGrid[x][y].y = y;
+            ComplexGrid[x][y].parent = &ComplexGrid[x][y];
         }
     }
 
@@ -33,8 +41,9 @@ void Maze::Start() {
         };
     }
     // stack.push(start);
-    // while (GenKruskals());
-    // PrintToConsole();
+    // while (GenPrims());
+    // for (int i = 0; i < 20; i++) GenPrims();
+    PrintToConsole();
 }
 
 void Maze::Reset() {
@@ -50,15 +59,26 @@ void Maze::Reset() {
     while (drawBuffer.size() != 0) drawBuffer.pop();
 
     start = finish;
-
-    BeginDrawing();
-    ClearBackground(BLACK);
-    EndDrawing();
-    BeginDrawing();
-    ClearBackground(BLACK);
-    EndDrawing();
     
 };
+
+void Maze::ResetScreen() {
+    BeginDrawing();
+    ClearBackground(BLACK);
+    EndDrawing();
+    BeginDrawing();
+    ClearBackground(BLACK);
+    EndDrawing();
+};
+
+void Maze::ResetComplexGrid() {
+    for (int x = 0; x < width; x++) {
+        for (int y = 0; y < height; y++) {
+            ComplexGrid[x][y].id = -1;
+            ComplexGrid[x][y].parent = &ComplexGrid[x][y];
+        }
+    }
+}
 
 void Maze::PrintToConsole() {
     std::cout << std::endl;
@@ -74,8 +94,8 @@ void Maze::Generate() {
     Reset();
     stack.push(start);
     
-    // int randGenID = rand()%4;
-    int randGenID = 3;
+    int randGenID = rand()%4;
+    randGenID = 4;
     if (randGenID == 0) {
         while (GenGridDFS());
         SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
@@ -88,8 +108,12 @@ void Maze::Generate() {
     } else if (randGenID == 3) {
         while (GenKruskals());
         SetWindowTitle("Hmmf's Maze : Generator : Kruskals Maze Algorithm");
+    } else if (randGenID == 4) {
+        while (GenPrims());
+        SetWindowTitle("Hmmf's Maze : Generator : Prims Maze Algorithm");
     }
 
+    ResetScreen();
     GenFinish();
     drawQueue.push(DrawElement(start,GREEN));
     drawQueue.push(DrawElement(finish,RED));
@@ -105,6 +129,7 @@ void Maze::Solve() {
         while(SolveDFS());
         SetWindowTitle("Hmmf's Maze : Solver : Depth First Search");
     } else if (randSolvID == 1) {
+        ResetComplexGrid();
         while(SolveBFS());
         SetWindowTitle("Hmmf's Maze : Solver : Breadth First Search");
     }
@@ -148,22 +173,28 @@ bool Maze::InBound(Vec2 pos) {
 // 10 11 12 13 14
 // 15 16 17 18 19
 // 20 21 22 23 24
-bool* Maze::GetNeighbours(Vec2 pos, bool generating) {
+bool* Maze::GetNeighbours(Vec2 pos, bool generating, int id) {
     bool* neighbours = new bool[25]{false};
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-            if (InBound(Vec2(pos.x + i - 2, pos.y + j - 2))) {
-                if (generating) neighbours[i + (j * 5)] = !grid[pos.x + i - 2][pos.y + j -2];
-                else neighbours[i + (j * 5)] = grid[pos.x + i - 2][pos.y + j -2];
-            }
+
+    int size = 0;
+    const int* shape = neighbourShapes.getShape(id, size);
+
+    // std::cout << std::endl;
+    for (int i = 0; i < size; i++) {
+        int y = shape[i]/5 - 2;
+        int x = shape[i]%5 - 2;
+        // std::cout << "( " << x << "," << y << ") ";
+        if (InBound(Vec2(pos.x + x, pos.y + y))) {
+            if (generating) neighbours[shape[i]] = !grid[pos.x + x][pos.y + y];
+            else neighbours[shape[i]] = grid[pos.x + x][pos.y + y];
         }
     }
 
     // for (int i = 0; i < 25; i++) {
-    //     if (i % 5 == 0) std::cout << std::endl;
-    //     std::cout << (neighbours[i] ? "□ " : "■ ");
+    //     if (i%5==0) std::cout<<std::endl;
+    //     std::cout << (neighbours[i] ? "□" : "■");
     // }
-    // std::cout << std::endl;
+
 
     return neighbours;
 }
@@ -223,7 +254,7 @@ bool Maze::GenGridDFS() {
     Vec2 pos = stack.top();
     grid[pos.x][pos.y] = true;
 
-    bool* neighbours = GetNeighbours(pos);
+    bool* neighbours = GetNeighbours(pos,true,0);
     std::vector<Vec2> options;
     if (neighbours[2]) options.push_back(Vec2(0,-1));
     if (neighbours[10]) options.push_back(Vec2(-1,0));
@@ -252,7 +283,7 @@ bool Maze::GenLooseWideDFS() {
     Vec2 pos = stack.top();
     grid[pos.x][pos.y] = true;
 
-    bool* neighbours = GetNeighbours(pos);
+    bool* neighbours = GetNeighbours(pos,true,1);
     std::vector<Vec2> options;
     if (neighbours[1] && neighbours[2] && neighbours[3] && neighbours[6] && neighbours[7] && neighbours[8]) options.push_back(Vec2(0,-1));
     if (neighbours[5] && neighbours[10] && neighbours[15] && neighbours[6] && neighbours[11] && neighbours[16]) options.push_back(Vec2(-1,0));
@@ -281,7 +312,7 @@ bool Maze::GenLooseTightDFS() {
     Vec2 pos = stack.top();
     grid[pos.x][pos.y] = true;
 
-    bool* neighbours = GetNeighbours(pos);
+    bool* neighbours = GetNeighbours(pos,true,2);
     std::vector<Vec2> options;
     if (neighbours[2] && neighbours[6] && neighbours[7] && neighbours[8]) options.push_back(Vec2(0,-1));
     if (neighbours[10] && neighbours[6] && neighbours[11] && neighbours[16]) options.push_back(Vec2(-1,0));
@@ -311,17 +342,12 @@ bool Maze::GenKruskals() {
 
         int setID = 0;
 
-        KruskalsGrid = new KruskalsSquare*[width];
         for (int x = 0; x < width; x++) {
-            KruskalsGrid[x] = new KruskalsSquare[height];
             if (x == 0 || x == width-1) continue;
-
             for (int y = 1; y < height-1; y++) {
-                KruskalsGrid[x][y].x = x;
-                KruskalsGrid[x][y].y = y;
                 if (x%2 == 1 && y%2 == 1) {
-                    KruskalsGrid[x][y].id = setID++;
-                    KruskalsGrid[x][y].parent = &KruskalsGrid[x][y];
+                    ComplexGrid[x][y].id = setID++;
+                    ComplexGrid[x][y].parent = &ComplexGrid[x][y];
                 } else if (!(x%2 == 0 && y%2 == 0) && !(x%2 == 1 && y%2 == 1)) {
                     vector.push_back(Vec2(x,y));
                 }
@@ -339,15 +365,15 @@ bool Maze::GenKruskals() {
     int x = pos.x;
     int y = pos.y;
     
-    KruskalsSquare* firstSquare;
-    KruskalsSquare* secondSquare;
+    ComplexSquare* firstSquare;
+    ComplexSquare* secondSquare;
 
     if (x % 2 == 0) {
-        firstSquare = KruskalsGrid[x-1][y].getParent();
-        secondSquare = KruskalsGrid[x+1][y].getParent();
+        firstSquare = ComplexGrid[x-1][y].getParent();
+        secondSquare = ComplexGrid[x+1][y].getParent();
     } else if (y % 2 == 0) {
-        firstSquare = KruskalsGrid[x][y-1].getParent();
-        secondSquare = KruskalsGrid[x][y+1].getParent();
+        firstSquare = ComplexGrid[x][y-1].getParent();
+        secondSquare = ComplexGrid[x][y+1].getParent();
     }
     
     if (firstSquare->parent->id != secondSquare->parent->id) {
@@ -369,17 +395,62 @@ bool Maze::GenKruskals() {
         }
     }
 
-    // std::cout << std::endl;
+    return true;
+}
 
-    // PrintToConsole();
+bool Maze::GenPrims() {
+    if (stack.size() != 0) {
+        GridStart();
+        Vec2 top = stack.top();
+        grid[top.x][top.y] = false;
+        stack.pop();
 
-    // std::cout << std::endl;
-    // for (int y = 0; y < height; y++) {
-    //     for (int x = 0; x < width; x++) {
-    //         std::cout<< (KruskalsGrid[x][y].parent != nullptr && KruskalsGrid[x][y].parent->id != -1 ? std::to_string(KruskalsGrid[x][y].parent->id) + " " : "■ ");
-    //     }
-    //     std::cout << std::endl;
-    // }
+        int randx = (rand() % ((width-3)/2))+1;
+        int randy = (rand() % ((height-3)/2))+1;
+        if (randx%2==0) randx++;
+        if (randy%2==0) randy++;
+
+        complexVector.push_back(new ComplexSquare(randx,randy));
+        
+    }
+
+    if (complexVector.size() == 0) return false;
+
+    int randID = rand() % complexVector.size();
+    ComplexSquare* pos = complexVector.at(randID);
+    complexVector.erase(complexVector.begin() + randID);
+
+    if (grid[pos->x][pos->y]) return true;
+
+    grid[pos->x][pos->y] = true;
+    
+
+    if (pos->parent != nullptr) {
+        if (pos->x > pos->parent->x) {
+            grid[pos->x-1][pos->y] = true;
+            drawQueue.push(DrawElement(pos->x-1,pos->y,WHITE));
+        }
+        if (pos->x < pos->parent->x) {
+            grid[pos->x+1][pos->y] = true;
+            drawQueue.push(DrawElement(pos->x+1,pos->y,WHITE));
+        }
+        if (pos->y > pos->parent->y) {
+            grid[pos->x][pos->y-1] = true;
+            drawQueue.push(DrawElement(pos->x,pos->y-1,WHITE));
+        }
+        if (pos->y < pos->parent->y) {
+            grid[pos->x][pos->y+1] = true;
+            drawQueue.push(DrawElement(pos->x,pos->y+1,WHITE));
+        }
+    }
+
+    drawQueue.push(DrawElement(pos->x,pos->y,WHITE));
+
+    bool* neighbours = GetNeighbours(Vec2(pos->x,pos->y),true,0);
+    if (neighbours[2]) complexVector.push_back(new ComplexSquare(pos->x,pos->y-2,pos));
+    if (neighbours[10]) complexVector.push_back(new ComplexSquare(pos->x-2,pos->y,pos));
+    if (neighbours[14]) complexVector.push_back(new ComplexSquare(pos->x+2,pos->y,pos));
+    if (neighbours[22]) complexVector.push_back(new ComplexSquare(pos->x,pos->y+2,pos));
 
     return true;
 }
@@ -416,25 +487,48 @@ bool Maze::SolveDFS() {
 
 bool Maze::SolveBFS() {
     if (stack.size() != 0) {
-        queue.push(stack.top());
+        queue.push(Vec2(stack.top()));
         stack.pop();
     }
+
     if (queue.size() == 0) return false;
 
     Vec2 pos = queue.front();
     queue.pop();
     grid[pos.x][pos.y] = false;
+    // BFSIndex[pos.x][pos.y] = pos.id;
 
     drawQueue.push(DrawElement(pos,ORANGE));
     drawQueue.push(DrawElement(pos,YELLOW));
 
-    if (pos.x == finish.x && pos.y == finish.y) return false;
+    if (pos.x == finish.x && pos.y == finish.y) {
+        pos = ComplexGrid[pos.x][pos.y].GetParentVec();
+        while (!(pos.x == 0 || pos.x == width-1) && !(pos.y == 0 || pos.y == height-1)) {
+            // std::cout<<"(" << pos.x << "," << pos.y << ") : ";
+            drawQueue.push(ComplexGrid[pos.x][pos.y].GetDraw());
+            pos = ComplexGrid[pos.x][pos.y].GetParentVec();
+        }
+        // std::cout<<std::endl<<std::endl;
+        return false;
+    }
 
     bool* neighbours = GetNeighbours(pos, false);
-    if (neighbours[7]) queue.push(Vec2(pos.x,pos.y-1));
-    if (neighbours[11]) queue.push(Vec2(pos.x-1,pos.y));
-    if (neighbours[13]) queue.push(Vec2(pos.x+1,pos.y));
-    if (neighbours[17]) queue.push(Vec2(pos.x,pos.y+1));
+    if (neighbours[7]) {
+        queue.push(Vec2(pos.x,pos.y-1));
+        ComplexGrid[pos.x][pos.y-1].parent = &ComplexGrid[pos.x][pos.y];
+    }
+    if (neighbours[11]) {
+        queue.push(Vec2(pos.x-1,pos.y));
+        ComplexGrid[pos.x-1][pos.y].parent = &ComplexGrid[pos.x][pos.y];
+    }
+    if (neighbours[13]) {
+        queue.push(Vec2(pos.x+1,pos.y));
+        ComplexGrid[pos.x+1][pos.y].parent = &ComplexGrid[pos.x][pos.y];
+    }
+    if (neighbours[17]) {
+        queue.push(Vec2(pos.x,pos.y+1));
+        ComplexGrid[pos.x][pos.y+1].parent = &ComplexGrid[pos.x][pos.y];
+    }
 
     return true;
 
