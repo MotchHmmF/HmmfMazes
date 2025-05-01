@@ -5,6 +5,9 @@
 #include <stack>
 #include <vector>
 #include <queue>
+#include <unordered_set>
+#include <algorithm>
+#include <bits/stdc++.h>
 
 class Vec2 {
     public:
@@ -23,6 +26,29 @@ class DrawElement {
         Color colour;
 };
 
+class KruskalsSquare {
+    public:
+        KruskalsSquare() {};
+        KruskalsSquare(int x, int y, int id) : x(x), y(y), id(id) {};
+
+        bool operator==(const KruskalsSquare& other) const {
+            return x == other.x && y == other.y;
+        }
+
+        void updateParent(KruskalsSquare* NewParent) {
+            parent = NewParent;
+            for (KruskalsSquare* child : children) {
+                child->updateParent(NewParent);
+            }
+            while (children.size() != 0) children.pop_back();
+        }
+
+        int x = -1, y = -1, id = -1;
+        KruskalsSquare* parent = nullptr;
+        std::vector<KruskalsSquare*> children;
+};
+
+
 class Maze {
     public:
         Maze(int width=11, int height=11, int gridSize=10, int seed=static_cast<int>(time(nullptr)));
@@ -39,9 +65,13 @@ class Maze {
 
         std::stack<Vec2> stack;
         std::queue<Vec2> queue;
+        std::vector<Vec2> vector;
+
+        // std::unordered_set<int>* KruskalsSets;
+        KruskalsSquare** KruskalsGrid;
 
         bool generated = false, solved = false;
-        int drawFrequency = 1, drawPerFrame = 1;
+        int drawFrequency = 1, drawPerFrame = 5;
         std::queue<DrawElement> drawQueue;
         std::queue<DrawElement> drawBuffer;
 
@@ -61,6 +91,7 @@ class Maze {
         bool GenGridDFS();
         bool GenLooseWideDFS();
         bool GenLooseTightDFS();
+        bool GenKruskals();
 
         bool SolveDFS();
         bool SolveBFS();

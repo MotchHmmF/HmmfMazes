@@ -32,6 +32,9 @@ void Maze::Start() {
             } else generated = false;
         };
     }
+    // stack.push(start);
+    // while (GenKruskals());
+    // PrintToConsole();
 }
 
 void Maze::Reset() {
@@ -71,7 +74,8 @@ void Maze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%3;
+    int randGenID = rand()%4;
+    // int randGenID = 3;
     if (randGenID == 0) {
         while (GenGridDFS());
         SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
@@ -81,6 +85,9 @@ void Maze::Generate() {
     } else if (randGenID == 2) {
         while (GenLooseWideDFS());
         SetWindowTitle("Hmmf's Maze : Generator : Loose Wide Depth First Search");
+    } else if (randGenID == 3) {
+        while (GenKruskals());
+        SetWindowTitle("Hmmf's Maze : Generator : Kruskals Maze Algorithm");
     }
 
     GenFinish();
@@ -295,6 +302,90 @@ bool Maze::GenLooseTightDFS() {
 
     return true;
 
+}
+
+bool Maze::GenKruskals() {
+    if (stack.size() == 1) {
+        GridStart();
+        stack.pop();
+
+        int setID = 0;
+
+        KruskalsGrid = new KruskalsSquare*[width];
+        for (int x = 0; x < width; x++) {
+            KruskalsGrid[x] = new KruskalsSquare[height];
+            if (x == 0 || x == width-1) continue;
+
+            for (int y = 1; y < height-1; y++) {
+                KruskalsGrid[x][y].x = x;
+                KruskalsGrid[x][y].y = y;
+                if (x%2 == 1 && y%2 == 1) {
+                    KruskalsGrid[x][y].id = setID++;
+                    KruskalsGrid[x][y].parent = &KruskalsGrid[x][y];
+                } else if (!(x%2 == 0 && y%2 == 0) && !(x%2 == 1 && y%2 == 1)) {
+                    vector.push_back(Vec2(x,y));
+                }
+            }
+        }
+
+        std::shuffle(vector.begin(), vector.end(), std::default_random_engine());
+    }
+
+    if (vector.size() == 0) return false;
+
+    Vec2 pos = vector.back();
+    vector.pop_back();
+
+    int x = pos.x;
+    int y = pos.y;
+    
+    KruskalsSquare* firstSquare;
+    KruskalsSquare* secondSquare;
+
+    if (x % 2 == 0) {
+        firstSquare = KruskalsGrid[x-1][y].parent;
+        secondSquare = KruskalsGrid[x+1][y].parent;
+    } else if (y % 2 == 0) {
+        firstSquare = KruskalsGrid[x][y-1].parent;
+        secondSquare = KruskalsGrid[x][y+1].parent;
+    }
+    
+    if (firstSquare->parent->id != secondSquare->parent->id) {
+        firstSquare->children.push_back(secondSquare);
+        for (KruskalsSquare* child : secondSquare->children) {
+            firstSquare->children.push_back(child);
+        }
+        secondSquare->updateParent(firstSquare);
+        // std::cout << " Updated: 1:" << firstSquare->parent->id << " 2:" << secondSquare->parent->id;
+        for (int i = -1; i <= 1; i++) {
+            if (x%2==0) {
+                if (!grid[x+i][y]) {
+                    grid[x+i][y] = true;
+                    drawQueue.push(DrawElement(x+i,y,WHITE));
+                }
+            } else {
+                if (!grid[x][y+i]) {
+                    grid[x][y+i] = true;
+                    drawQueue.push(DrawElement(x,y+i,WHITE));
+                }
+            }
+            
+        }
+    }
+
+    // std::cout << std::endl;
+
+    // PrintToConsole();
+
+    // std::cout << std::endl;
+    // for (int y = 0; y < height; y++) {
+    //     for (int x = 0; x < width; x++) {
+    //         std::cout<< (KruskalsGrid[x][y].parent != nullptr && KruskalsGrid[x][y].parent->id != -1 ? std::to_string(KruskalsGrid[x][y].parent->id) + " " : "■ ");
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    return true;
 }
 
 bool Maze::SolveDFS() {
