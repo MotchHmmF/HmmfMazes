@@ -43,7 +43,7 @@ void Maze::Start() {
     // stack.push(start);
     // while (GenPrims());
     // for (int i = 0; i < 20; i++) GenPrims();
-    PrintToConsole();
+    // PrintToConsole();
 }
 
 void Maze::Reset() {
@@ -94,8 +94,8 @@ void Maze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%4;
-    randGenID = 4;
+    int randGenID = rand()%5;
+    // randGenID = 3;
     if (randGenID == 0) {
         while (GenGridDFS());
         SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
@@ -405,11 +405,12 @@ bool Maze::GenPrims() {
         grid[top.x][top.y] = false;
         stack.pop();
 
+        // complexVector.push_back(new ComplexSquare(top.x,top.y));
+
         int randx = (rand() % ((width-3)/2))+1;
         int randy = (rand() % ((height-3)/2))+1;
         if (randx%2==0) randx++;
         if (randy%2==0) randy++;
-
         complexVector.push_back(new ComplexSquare(randx,randy));
         
     }

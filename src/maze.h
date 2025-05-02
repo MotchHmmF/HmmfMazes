@@ -124,7 +124,7 @@ class Maze {
         // int** BFSIndex;
 
         bool generated = false, solved = false;
-        int drawFrequency = 1, drawPerFrame = 1;
+        int drawFrequency = 1, drawPerFrame = 2000;
         std::queue<DrawElement> drawQueue;
         std::queue<DrawElement> drawBuffer;
 
