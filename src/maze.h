@@ -5,7 +5,6 @@
 #include <stack>
 #include <vector>
 #include <queue>
-#include <unordered_set>
 #include <algorithm>
 #include <bits/stdc++.h>
 
@@ -66,7 +65,7 @@ class ComplexSquare {
 
         int x = -1, y = -1, id = -1;
         ComplexSquare* parent = nullptr;
-        // std::vector<Square*> children;
+        Color gridColour = WHITE;
 };
 
 class NeighbourShapes {
@@ -100,6 +99,50 @@ class NeighbourShapes {
         const int ALL[25] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
 };
 
+class Mouse {
+    public:
+        Mouse() {};
+
+        void SetPos(Vec2 pos) {
+            x = pos.x;
+            y = pos.y;
+            up = false;
+            right = false;
+            left = false;
+            down = true;
+        };
+        void MoveUp() {
+            y--;
+            up = false;
+            right = false;
+            left = false;
+            down = true;
+        };
+        void MoveDown() {
+            y++;
+            up = true;
+            right = false;
+            left = false;
+            down = false;
+        };
+        void MoveLeft() {
+            x--;
+            up = false;
+            right = true;
+            left = false;
+            down = false;
+        };
+        void MoveRight() {
+            x++;
+            up = false;
+            right = false;
+            left = true;
+            down = false;
+        };
+        int x = -1, y = -1;
+        bool up = true, right = false, down = false, left = false;
+};
+
 class Maze {
     public:
         Maze(int width=11, int height=11, int gridSize=10, int seed=static_cast<int>(time(nullptr)));
@@ -121,10 +164,10 @@ class Maze {
 
         NeighbourShapes neighbourShapes;
         ComplexSquare** ComplexGrid;
-        // int** BFSIndex;
+        Mouse mouse;
 
         bool generated = false, solved = false;
-        int drawFrequency = 1, drawPerFrame = 2000;
+        int drawFrequency = 1, drawPerFrame = 1;
         std::queue<DrawElement> drawQueue;
         std::queue<DrawElement> drawBuffer;
 
@@ -151,6 +194,7 @@ class Maze {
 
         bool SolveDFS();
         bool SolveBFS();
+        bool SolveMouse();
    
 };
 

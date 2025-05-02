@@ -31,6 +31,21 @@ void Maze::Start() {
     int frameCount = 0;
 
     while (!WindowShouldClose()) {
+        if (IsKeyPressed(KEY_RIGHT)) {
+            if (drawFrequency != 1) {
+                drawFrequency /= 2;
+            } else {
+                drawPerFrame*=2;
+            }
+        }
+        if (IsKeyPressed(KEY_LEFT)) {
+            if (drawPerFrame != 1) {
+                drawPerFrame /= 2;
+            } else {
+                drawFrequency *= 2;
+            }
+        }
+
         if (!generated && frameCount >= 0) Generate();
 
         if (!Draw(frameCount++)) {
@@ -42,8 +57,10 @@ void Maze::Start() {
     }
     // stack.push(start);
     // while (GenPrims());
-    // for (int i = 0; i < 20; i++) GenPrims();
+    // // for (int i = 0; i < 20; i++) GenPrims();
     // PrintToConsole();
+    // stack.push(start);
+    // for (int i = 0; i < 20; i++) SolveMouse();
 }
 
 void Maze::Reset() {
@@ -76,6 +93,7 @@ void Maze::ResetComplexGrid() {
         for (int y = 0; y < height; y++) {
             ComplexGrid[x][y].id = -1;
             ComplexGrid[x][y].parent = &ComplexGrid[x][y];
+            ComplexGrid[x][y].gridColour = WHITE;
         }
     }
 }
@@ -125,6 +143,7 @@ void Maze::Solve() {
     stack.push(start);
 
     int randSolvID = rand()%2;
+    randSolvID = 2;
     if (randSolvID == 0) {
         while(SolveDFS());
         SetWindowTitle("Hmmf's Maze : Solver : Depth First Search");
@@ -132,6 +151,9 @@ void Maze::Solve() {
         ResetComplexGrid();
         while(SolveBFS());
         SetWindowTitle("Hmmf's Maze : Solver : Breadth First Search");
+    } else if (randSolvID == 2) {
+        while(SolveMouse());
+        SetWindowTitle("Hmmf's Maze : Solver : Randomised Mouse Search");
     }
     
     solved = true;
@@ -533,4 +555,81 @@ bool Maze::SolveBFS() {
 
     return true;
 
+}
+
+bool Maze::SolveMouse() {
+    if (stack.size() != 0) {
+        ResetComplexGrid();
+        mouse.SetPos(start);
+        stack.pop();
+    }
+
+    if (mouse.x == finish.x && mouse.y == finish.y) return false;
+
+    if (!(mouse.x == start.x && mouse.y == start.y)) {
+        unsigned char step = 1, start = 60;
+        Color mousePath = ComplexGrid[mouse.x][mouse.y].gridColour;
+        if (mousePath.r == WHITE.r && mousePath.g == WHITE.g && mousePath.b == WHITE.b) {
+            mousePath = CLITERAL(Color){ start, 0, 0, 255 };
+        } else if (mousePath.r != 0) {
+            mousePath.r+=step;
+            if (mousePath.r < start) {
+                mousePath.r = 0;
+                mousePath.b = start;
+            }
+        }   else if (mousePath.b != 0) {
+            mousePath.b+=step;
+            if (mousePath.b < start) {
+                mousePath.b = 0;
+                mousePath.g = start;
+            }
+        }else if (mousePath.g != 0) {
+            mousePath.g+=step;
+            if (mousePath.g < start) {
+                mousePath.g = 0;
+                mousePath.r = start;
+            }
+        }
+        ComplexGrid[mouse.x][mouse.y].gridColour = mousePath;
+    
+        drawQueue.push(DrawElement(mouse.x, mouse.y, mousePath));
+
+    }
+
+    if (!mouse.up && InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+        vector.push_back(Vec2(0,-1));
+    }
+    if (!mouse.down && InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+        vector.push_back(Vec2(0,1));
+    }
+    if (!mouse.left && InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+        vector.push_back(Vec2(-1,0));
+    }
+    if (!mouse.right && InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+        vector.push_back(Vec2(1,0));
+    }
+
+    if (vector.size() == 0) {
+        if (mouse.up) mouse.MoveUp();
+        else if (mouse.down) mouse.MoveDown();
+        else if (mouse.left) mouse.MoveLeft();
+        else if (mouse.right) mouse.MoveRight();
+    } else {
+        int rndID = rand() % vector.size();
+        Vec2 dir = vector.at(rndID);
+        vector.clear();
+        if (dir.x == 1) mouse.MoveRight();
+        else if (dir.x == -1) mouse.MoveLeft();
+        else if (dir.y == 1) mouse.MoveDown();
+        else if (dir.y == -1) mouse.MoveUp();
+    }
+
+    if (!(mouse.x == start.x && mouse.y == start.y)) {
+        if (width*height < 1000) {
+            drawQueue.push(DrawElement(mouse.x, mouse.y, GRAY));
+        }
+    }
+    
+
+    return true;
 }
