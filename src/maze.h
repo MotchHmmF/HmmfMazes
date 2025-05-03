@@ -166,8 +166,8 @@ class Maze {
         ComplexSquare** ComplexGrid;
         Mouse mouse;
 
-        bool generated = false, solved = false;
-        int drawFrequency = 1, drawPerFrame = 1;
+        bool generated = false, solved = false, mouseSolving = false;
+        int drawFrequency = 1, drawPerFrame = 1, pausedDrawFrequency = 0;
         std::queue<DrawElement> drawQueue;
         std::queue<DrawElement> drawBuffer;
 

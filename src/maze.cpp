@@ -45,9 +45,39 @@ void Maze::Start() {
                 drawFrequency *= 2;
             }
         }
+        if (IsKeyPressed(KEY_S)) {
+            if (!mouseSolving) {
+                int tempDrawPerFrame = drawPerFrame;
+                int tempDrawFrequency = drawFrequency;
+                drawPerFrame = width*height;
+                drawFrequency = 1;
+                Draw(drawFrequency);
+                drawPerFrame = tempDrawPerFrame;
+                drawFrequency = tempDrawFrequency;
+            } else {
+                mouseSolving = false;
+                solved = true;
+            }
+        }
+        if (IsKeyPressed(KEY_P)) {
+            if (drawFrequency != 0) {
+                pausedDrawFrequency = drawFrequency;
+                drawFrequency = 0;
+            }
+            else if (drawFrequency == 0) drawFrequency = pausedDrawFrequency;
+        }
+        if (IsKeyPressed(KEY_SPACE)) {
+            int tempDrawPerFrame = drawPerFrame;
+            int tempDrawFrequency = drawFrequency;
+            drawPerFrame = 1;
+            drawFrequency = 1;
+            Draw(drawFrequency);
+            drawPerFrame = tempDrawPerFrame;
+            drawFrequency = tempDrawFrequency;
+        }
 
         if (!generated && frameCount >= 0) Generate();
-
+        
         if (!Draw(frameCount++)) {
             // frameCount = -300;
             if (!solved) {
@@ -140,10 +170,13 @@ void Maze::Generate() {
 }
 
 void Maze::Solve() {
-    stack.push(start);
+    if (!mouseSolving) stack.push(start);
 
-    int randSolvID = rand()%2;
-    randSolvID = 2;
+    int randSolvID = rand()%3;
+    // randSolvID = 2;
+
+    if (mouseSolving) randSolvID = 2;
+
     if (randSolvID == 0) {
         while(SolveDFS());
         SetWindowTitle("Hmmf's Maze : Solver : Depth First Search");
@@ -152,11 +185,18 @@ void Maze::Solve() {
         while(SolveBFS());
         SetWindowTitle("Hmmf's Maze : Solver : Breadth First Search");
     } else if (randSolvID == 2) {
-        while(SolveMouse());
+        // while(SolveMouse());
+        mouseSolving = true;
+        for (int _ = 0; _ < drawPerFrame; _++) {
+            if (!SolveMouse()) {
+                mouseSolving = false;
+                break;
+            }
+        }
         SetWindowTitle("Hmmf's Maze : Solver : Randomised Mouse Search");
     }
     
-    solved = true;
+    if (!mouseSolving) solved = true;
 
 }
 
@@ -170,7 +210,7 @@ bool Maze::Draw(int frameCount) {
         DrawRectangle(nextElement.x*gridSize, nextElement.y*gridSize, gridSize, gridSize, nextElement.colour);
     }
 
-    if (frameCount >= 0 && frameCount % drawFrequency == 0) {
+    if (frameCount >= 0 && drawFrequency != 0 && frameCount % drawFrequency == 0) {
         for (int _ = 0; _ < drawPerFrame; _++) {
             if (drawQueue.size() == 0) break;
             nextElement = drawQueue.front();
@@ -501,7 +541,7 @@ bool Maze::SolveDFS() {
         Vec2 randDir = options.at(rand() % options.size());
         randDir.x = randDir.x + pos.x;
         randDir.y = randDir.y + pos.y;
-        drawQueue.push(DrawElement(randDir,ORANGE));
+        // drawQueue.push(DrawElement(randDir,ORANGE));
         stack.push(randDir);
     }
 
@@ -521,7 +561,7 @@ bool Maze::SolveBFS() {
     grid[pos.x][pos.y] = false;
     // BFSIndex[pos.x][pos.y] = pos.id;
 
-    drawQueue.push(DrawElement(pos,ORANGE));
+    // drawQueue.push(DrawElement(pos,ORANGE));
     drawQueue.push(DrawElement(pos,YELLOW));
 
     if (pos.x == finish.x && pos.y == finish.y) {
@@ -567,7 +607,7 @@ bool Maze::SolveMouse() {
     if (mouse.x == finish.x && mouse.y == finish.y) return false;
 
     if (!(mouse.x == start.x && mouse.y == start.y)) {
-        unsigned char step = 1, start = 60;
+        unsigned char step = 1, start = 40;
         Color mousePath = ComplexGrid[mouse.x][mouse.y].gridColour;
         if (mousePath.r == WHITE.r && mousePath.g == WHITE.g && mousePath.b == WHITE.b) {
             mousePath = CLITERAL(Color){ start, 0, 0, 255 };
@@ -593,6 +633,7 @@ bool Maze::SolveMouse() {
         ComplexGrid[mouse.x][mouse.y].gridColour = mousePath;
     
         drawQueue.push(DrawElement(mouse.x, mouse.y, mousePath));
+        if (drawQueue.size() % 1000000 == 0) std::cout << drawQueue.size() << "  ";
 
     }
 
@@ -629,7 +670,6 @@ bool Maze::SolveMouse() {
             drawQueue.push(DrawElement(mouse.x, mouse.y, GRAY));
         }
     }
-    
 
     return true;
 }
