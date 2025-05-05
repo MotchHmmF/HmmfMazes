@@ -49,7 +49,7 @@ void Maze::Start() {
             if (!mouseSolving) {
                 int tempDrawPerFrame = drawPerFrame;
                 int tempDrawFrequency = drawFrequency;
-                drawPerFrame = width*height;
+                drawPerFrame = drawQueue.size();
                 drawFrequency = 1;
                 Draw(drawFrequency);
                 drawPerFrame = tempDrawPerFrame;
@@ -78,6 +78,8 @@ void Maze::Start() {
 
         if (!generated && frameCount >= 0) Generate();
         
+        // BeginDrawing();
+        // EndDrawing();
         if (!Draw(frameCount++)) {
             // frameCount = -300;
             if (!solved) {
@@ -142,21 +144,24 @@ void Maze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%5;
-    // randGenID = 3;
+    int randGenID = rand()%3;
+
     if (randGenID == 0) {
-        while (GenGridDFS());
-        SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
+        randGenID = rand() % 3;
+        if (randGenID == 0) {
+            while (GenGridDFS());
+            SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
+        } else if (randGenID == 1) {
+            while (GenLooseTightDFS());
+            SetWindowTitle("Hmmf's Maze : Generator : Loose Tight Depth First Search");
+        } else if (randGenID == 2) {
+            while (GenLooseWideDFS());
+            SetWindowTitle("Hmmf's Maze : Generator : Loose Wide Depth First Search");
+        }
     } else if (randGenID == 1) {
-        while (GenLooseTightDFS());
-        SetWindowTitle("Hmmf's Maze : Generator : Loose Tight Depth First Search");
-    } else if (randGenID == 2) {
-        while (GenLooseWideDFS());
-        SetWindowTitle("Hmmf's Maze : Generator : Loose Wide Depth First Search");
-    } else if (randGenID == 3) {
         while (GenKruskals());
         SetWindowTitle("Hmmf's Maze : Generator : Kruskals Maze Algorithm");
-    } else if (randGenID == 4) {
+    } else if (randGenID == 2) {
         while (GenPrims());
         SetWindowTitle("Hmmf's Maze : Generator : Prims Maze Algorithm");
     }
@@ -175,7 +180,7 @@ void Maze::Solve() {
     int randSolvID = rand()%3;
     // randSolvID = 2;
 
-    if (mouseSolving) randSolvID = 2;
+    if (mouseSolving) randSolvID = 3;
 
     if (randSolvID == 0) {
         while(SolveDFS());
@@ -185,6 +190,16 @@ void Maze::Solve() {
         while(SolveBFS());
         SetWindowTitle("Hmmf's Maze : Solver : Breadth First Search");
     } else if (randSolvID == 2) {
+        randSolvID = rand()%2;
+        if (randSolvID == 0) {
+            while(SolveRHWall());
+            SetWindowTitle("Hmmf's Maze : Solver : Right Hand Wall Follower");
+        } else {
+            while(SolveLHWall());
+            SetWindowTitle("Hmmf's Maze : Solver : Left Hand Wall Follower");
+        }
+        
+    } else if (randSolvID == 3) {
         // while(SolveMouse());
         mouseSolving = true;
         for (int _ = 0; _ < drawPerFrame; _++) {
@@ -235,13 +250,36 @@ bool Maze::InBound(Vec2 pos) {
 // 10 11 12 13 14
 // 15 16 17 18 19
 // 20 21 22 23 24
+// id: 1=GridDFS 2=LWDFS
+// 3= LTDFS 4= URDL
 bool* Maze::GetNeighbours(Vec2 pos, bool generating, int id) {
     bool* neighbours = new bool[25]{false};
 
     int size = 0;
-    const int* shape = neighbourShapes.getShape(id, size);
+    const int* shape;
+    switch (id) {
+        case 0:
+            size = sizeof(GRIDDFS) / sizeof(GRIDDFS[0]);
+            shape = GRIDDFS;
+            break;
+        case 1:
+            size = sizeof(LWDFS) / sizeof(LWDFS[0]);
+            shape = LWDFS;
+            break;
+        case 2:
+            size = sizeof(LTDFS) / sizeof(LTDFS[0]);
+            shape = LTDFS;
+            break;
+        case 3:
+            size = sizeof(URDL) / sizeof(URDL[0]);
+            shape = URDL;
+            break;
+        default:
+            size = sizeof(ALL)/ sizeof(ALL[0]);
+            shape = ALL;
+    }
 
-    // std::cout << std::endl;
+    // std::cout << size << std::endl;
     for (int i = 0; i < size; i++) {
         int y = shape[i]/5 - 2;
         int x = shape[i]%5 - 2;
@@ -264,15 +302,11 @@ bool* Maze::GetNeighbours(Vec2 pos, bool generating, int id) {
 void Maze::GridStart() {
     stack.pop();
     if (start.x == 0 || start.x == width-1) {
-        if (start.y % 2 != 1) {
-            start.y -= 1;
-        }
+        if (start.y % 2 != 1) start.y -= 1;
         if (start.x == 0) stack.push(Vec2(1,start.y));
         else stack.push(Vec2(width-2, start.y));
     } else {
-        if (start.x % 2 != 1) {
-            start.x -= 1;
-        }
+        if (start.x % 2 != 1) start.x -= 1;
         if (start.y == 0) stack.push(Vec2(start.x,1));
         else stack.push(Vec2(start.x,height-2));
     }
@@ -670,6 +704,164 @@ bool Maze::SolveMouse() {
             drawQueue.push(DrawElement(mouse.x, mouse.y, GRAY));
         }
     }
+
+    return true;
+}
+
+bool Maze::SolveRHWall() {
+    if (stack.size() != 0) {
+        mouse.SetPos(start);
+        stack.pop();
+    }
+
+    if (mouse.x == finish.x && mouse.y == finish.y) {
+        return false;
+    };
+
+
+    if (mouse.up) {
+        // x L x
+        // 1 x 3
+        // x 2 x
+        if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+            // std::cout << "Moved Left" << std::endl;
+        } else if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+            // std::cout << "Moved Down" << std::endl;
+        } else if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+            // std::cout << "Moved Right" << std::endl;
+        } else {
+            mouse.MoveUp();
+            // std::cout << "Moved Up" << std::endl;
+        }
+    } else if (mouse.right) {
+        // x 1 x
+        // 2 x L
+        // x 3 x
+        if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+            // std::cout << "Moved Up" << std::endl;
+        } else if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+            // std::cout << "Moved Left" << std::endl;
+        } else if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+            // std::cout << "Moved Down" << std::endl;
+        } else {
+            mouse.MoveRight();
+            // std::cout << "Moved Right" << std::endl;
+        }
+    } else if (mouse.down) {
+        // x 2 x
+        // 3 x 1
+        // x L x
+        if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+            // std::cout << "Moved Right" << std::endl;
+        } else if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+            // std::cout << "Moved Up" << std::endl;
+        } else if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+            // std::cout << "Moved Left" << std::endl;
+        } else {
+            mouse.MoveDown();
+            // std::cout << "Moved Down" << std::endl;
+        }
+    } else if (mouse.left) {
+        // x 3 x
+        // L x 2
+        // x 1 x
+        if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+            // std::cout << "Moved Down" << std::endl;
+        } else if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+            // std::cout << "Moved Right" << std::endl;
+        } else if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+            // std::cout << "Moved Up" << std::endl;
+        } else {
+            mouse.MoveLeft();
+            // std::cout << "Moved Left" << std::endl;
+        }
+        
+    }
+
+    drawQueue.push(DrawElement(Vec2(mouse.x,mouse.y), YELLOW));
+    // Draw(drawFrequency);
+
+    return true;
+}
+
+bool Maze::SolveLHWall() {
+    if (stack.size() != 0) {
+        // ResetComplexGrid();
+        mouse.SetPos(start);
+        stack.pop();
+    }
+
+    if (mouse.x == finish.x && mouse.y == finish.y) return false;
+
+    if (mouse.up) {
+        // x L x
+        // 3 x 1
+        // x 2 x
+        if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+        } else if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+        } else if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+        } else {
+            mouse.MoveUp();
+        }
+    } else if (mouse.right) {
+        // x 3 x
+        // 2 x L
+        // x 1 x
+        if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+        } else if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+        } else if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+        } else {
+            mouse.MoveRight();
+        }
+    } else if (mouse.down) {
+        // x 2 x
+        // 1 x 3
+        // x L x
+        if (InBound(Vec2(mouse.x-1,mouse.y)) && grid[mouse.x-1][mouse.y]) {
+            mouse.MoveLeft();
+        } else if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+        } else if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+        } else {
+            mouse.MoveDown();
+        }
+    } else if (mouse.left) {
+        // x 1 x
+        // L x 2
+        // x 3 x
+        if (InBound(Vec2(mouse.x,mouse.y-1)) && grid[mouse.x][mouse.y-1]) {
+            mouse.MoveUp();
+        } else if (InBound(Vec2(mouse.x+1,mouse.y)) && grid[mouse.x+1][mouse.y]) {
+            mouse.MoveRight();
+        } else if (InBound(Vec2(mouse.x,mouse.y+1)) && grid[mouse.x][mouse.y+1]) {
+            mouse.MoveDown();
+        } else {
+            mouse.MoveLeft();
+        }
+        
+    }
+
+    drawQueue.push(DrawElement(Vec2(mouse.x,mouse.y), ORANGE));
+
 
     return true;
 }

@@ -68,37 +68,6 @@ class ComplexSquare {
         Color gridColour = WHITE;
 };
 
-class NeighbourShapes {
-    public:
-        NeighbourShapes() {};
-
-        const int* getShape(int id, int& size) {
-            switch (id) {
-                case 0:
-                    size = sizeof(GRIDDFS) / sizeof(GRIDDFS[0]);
-                    return GRIDDFS;
-                case 1:
-                    size = sizeof(LWDFS) / sizeof(LWDFS[0]);
-                    return LWDFS;
-                case 2:
-                    size = sizeof(LTDFS) / sizeof(LTDFS[0]);
-                    return LTDFS;
-                case 3:
-                    size = sizeof(URDL) / sizeof(URDL[0]);
-                    return URDL;
-                default:
-                    size = 0;
-                    return nullptr;
-            }
-        }
-    private:
-        const int GRIDDFS[4] = {2, 10, 14, 22};
-        const int LWDFS[20] = {1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23};
-        const int LTDFS[12] = {2, 6, 7, 8, 10, 11, 13, 14, 16, 17, 18, 22};
-        const int URDL[4] = {7, 11, 13, 17};
-        const int ALL[25] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
-};
-
 class Mouse {
     public:
         Mouse() {};
@@ -162,7 +131,6 @@ class Maze {
         std::vector<Vec2> vector;
         std::vector<ComplexSquare*> complexVector;
 
-        NeighbourShapes neighbourShapes;
         ComplexSquare** ComplexGrid;
         Mouse mouse;
 
@@ -195,6 +163,15 @@ class Maze {
         bool SolveDFS();
         bool SolveBFS();
         bool SolveMouse();
+        bool SolveRHWall();
+        bool SolveLHWall();
+
+        const int GRIDDFS[4] = {2, 10, 14, 22};
+        const int LWDFS[20] = {1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19, 21, 22, 23};
+        const int LTDFS[12] = {2, 6, 7, 8, 10, 11, 13, 14, 16, 17, 18, 22};
+        const int URDL[4] = {7, 11, 13, 17};
+        const int ALL[25] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24};
+
    
 };
 
