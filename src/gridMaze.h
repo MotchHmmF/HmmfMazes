@@ -137,6 +137,8 @@ class GridMaze {
         void ResetComplexGrid();
         void PrintToConsole();
 
+        bool CanFractal();
+
         void Generate();
         void Solve();
         bool Draw(int frameCount);
@@ -154,6 +156,7 @@ class GridMaze {
         bool GenPrims();
         bool GenRecusiveDivision(Vec2 topLeft = Vec2(-1,-1), Vec2 bottomRight = Vec2(-1,-1));
         bool GenWilsons();
+        bool GenFractals();
 
         bool SolveDFS();
         bool SolveBFS();

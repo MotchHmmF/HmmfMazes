@@ -3,9 +3,9 @@
 #include "gridMaze.h"
 
 int main() {
-    int width = 1601;
-    int height = 1001;
-    int gridSize = 1;
+    int width = 45;
+    int height = 45;
+    int gridSize = 10;
 
     if (width%2==0) {
         std::cout << "WARN!" << std::endl;

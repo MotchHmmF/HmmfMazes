@@ -34,6 +34,8 @@ void GridMaze::Start() {
     // drawFrequency = 0;
     // stack.push(start);
 
+    if (CanFractal()) std::cout<<"Can Fractal"<<std::endl;
+
     ResetScreen();
 
     while (!WindowShouldClose()) {
@@ -73,7 +75,7 @@ void GridMaze::Start() {
             else if (drawFrequency == 0) drawFrequency = pausedDrawFrequency;
         }
         if (IsKeyPressed(KEY_SPACE)) {
-            // GenWilsons();
+            // if (drawQueue.size() == 0) GenFractals();
             int tempDrawPerFrame = drawPerFrame;
             int tempDrawFrequency = drawFrequency;
             drawPerFrame = 1;
@@ -86,11 +88,8 @@ void GridMaze::Start() {
         // Draw(frameCount++);
 
         if (!generated && frameCount >= 0) Generate();
-        
-        // BeginDrawing();
-        // EndDrawing();
+
         if (!Draw(frameCount++)) {
-            // frameCount = -300;
             if (!solved) {
                 Solve();
             } else generated = false;
@@ -150,12 +149,17 @@ void GridMaze::PrintToConsole() {
     }
 }
 
+bool GridMaze::CanFractal() {
+    if ((width-1)%4 != 0 || (height-1)%4 != 0) return false;
+    return true;
+}
+
 void GridMaze::Generate() {
     Reset();
     stack.push(start);
     
     int randGenID = rand()%5;
-    // randGenID=4;
+    // randGenID=3;
 
     functionTimeSeconds = (time(nullptr));
     functionTimeMiliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -186,11 +190,15 @@ void GridMaze::Generate() {
     } else if (randGenID == 3) {
         std::cout << "Starting Gen RecursiveDivision" << std::endl;
         while (GenRecusiveDivision());
-        SetWindowTitle("Hmmf's Maze : Generator : Recursive Division ALgorithm");
+        SetWindowTitle("Hmmf's Maze : Generator : Recursive Division Algorithm");
     } else if (randGenID == 4) {
         std::cout << "Starting Gen Wilsons" << std::endl;
         while (GenWilsons());
-        SetWindowTitle("Hmmf's Maze : Generator : Wilsons ALgorithm");
+        SetWindowTitle("Hmmf's Maze : Generator : Wilsons Algorithm");
+    } else if (randGenID == 5) {
+        std::cout << "Starting Gen Fractals" << std::endl;
+        while (GenFractals());
+        SetWindowTitle("Hmmf's Maze : Generator : Fractal Tessellation Algorithm");
     }
 
     std::cout << "Took:" << time(nullptr)-functionTimeSeconds << "s || " 
@@ -800,6 +808,186 @@ bool GridMaze::GenWilsons() {
         }
     }
     
+    return true;
+}
+
+bool GridMaze::GenFractals() {
+    if (stack.size() != 0) {
+        // GridStart();
+        stack.pop();
+    }
+    
+    if (vector.size() == 0) {
+        // Base case 3x3
+        for (int x = 1; x <= 3; x+=2) {
+            for (int y = 1; y <= 3; y+=2) {
+                grid[x][y] = true;
+                drawQueue.push(DrawElement(x, y, WHITE));
+            }
+        }
+
+        int randID = rand()%4;
+        if (randID != 0) {
+            grid[1][2] = true;
+            drawQueue.push(DrawElement(1, 2, WHITE));
+        }
+        if (randID != 1) {
+            grid[3][2] = true;
+            drawQueue.push(DrawElement(3, 2, WHITE));
+        }
+        if (randID != 2) {
+            grid[2][1] = true;
+            drawQueue.push(DrawElement(2, 1, WHITE));
+        }
+        if (randID != 3) {
+            grid[2][3] = true;
+            drawQueue.push(DrawElement(2, 3, WHITE));
+        }
+
+        vector.push_back(Vec2(3,3));
+    } else if (vector.size() == 1) {
+        std::cout<<"Fractal Extender"<<std::endl;
+        Vec2 size = vector.back();
+        vector.pop_back();
+
+        // Copy Right
+        for (int x = 1; x <= size.x; x++) {
+            for (int y = 1; y <= size.y; y++) {
+                if (grid[x][y]) {
+                    grid[x+size.x+1][y] = true;
+                    drawQueue.push(DrawElement(x+size.x+1, y, WHITE));
+                }
+            }
+        }
+        // Copy Down
+        for (int x = 1; x < (size.x+1)*2; x++) {
+            for (int y = 1; y <= size.y; y++) {
+                if (grid[x][y]) {
+                    grid[x][y+size.y+1] = true;
+                    drawQueue.push(DrawElement(x, y+size.y+1, WHITE));
+                }
+            }
+        }
+        // Connect
+        int randWall;
+        int randID = rand()%4;
+        // Top
+        if (randID != 0) {
+            randWall = (rand()%(size.x/2))*2+1;
+            grid[size.x+1][randWall] = true;
+            drawQueue.push(DrawElement(size.x+1,randWall,WHITE));
+        }
+        // Left
+        if (randID != 1) {
+            randWall = (rand()%(size.y/2))*2+1;
+            grid[randWall][size.y+1] = true;
+            drawQueue.push(DrawElement(randWall,size.y+1,WHITE));
+        }
+        // Right
+        if (randID != 2) {
+            randWall = (rand()%(size.y/2))*2+1;
+            grid[size.x+1+randWall][size.y+1] = true;
+            drawQueue.push(DrawElement(size.x+1+randWall,size.y+1,WHITE));
+        }
+        // Down
+        if (randID != 3) {
+            randWall = (rand()%(size.x/2))*2+1;
+            grid[size.x+1][size.y+1+randWall] = true;
+            drawQueue.push(DrawElement(size.x+1,size.y+1+randWall,WHITE));
+        }
+
+        if (!InBound(Vec2((size.x*2+1)*2+1,(size.y*2+1)*2+1))) {
+            vector.push_back(size);
+        }
+        vector.push_back(Vec2(size.x*2+1,size.y*2+1));
+        
+    } else if (vector.size() == 2) {
+        std::cout<<"Right space filler"<<std::endl;
+        Vec2 size = vector.back();
+
+        int maxFractleSize = 3;
+        int remainingWidth = width-size.x-3;
+
+        if (remainingWidth < 3) {
+            std::cout<<"Right Space Filler Done"<<std::endl;
+            vector.push_back(size);
+            return true;
+        }
+
+        while (maxFractleSize <= remainingWidth) {
+            maxFractleSize *= 2;
+            maxFractleSize += 1;
+        }
+        maxFractleSize -= 1;
+        maxFractleSize /= 2;
+        
+        int fractalCount = (size.y+1)/(maxFractleSize+1);
+        int randWall;
+
+        std::cout << size.y << "/" << maxFractleSize << "=" << fractalCount << std::endl;
+
+        // Copy Side
+        for (int i = 0; i < fractalCount; i++ ){
+            for (int x = 1; x <= maxFractleSize; x++) {
+                for (int y = 1; y <= maxFractleSize; y++) {
+                    if (grid[x][y]) {
+                        grid[x+size.x+1][y+(i*(maxFractleSize+1))] = true;
+                        drawQueue.push(DrawElement(x+size.x+1, y+(i*(maxFractleSize+1)), WHITE));
+                    }
+                }
+            }
+            randWall = (rand()%(maxFractleSize/2))*2+1;
+            grid[1+size.x][randWall+((i*(maxFractleSize+1)))] = true;
+            drawQueue.push(DrawElement(1+size.x,randWall+((i*(maxFractleSize+1))), WHITE));
+        }
+
+        vector.pop_back();
+        vector.push_back(Vec2(size.x+maxFractleSize+1,size.y));
+        
+    } else if (vector.size() == 3) {
+        std::cout<<"Down Space Filler"<<std::endl;
+        Vec2 size = vector.back();
+
+        int maxFractleSize = 3;
+        int remainingHeight = height-size.y-3;
+
+        if (remainingHeight < 3) {
+            std::cout<<"Done"<<std::endl;
+            GenFinish();
+            return false;
+        }
+
+        while (maxFractleSize <= remainingHeight) {
+            maxFractleSize *= 2;
+            maxFractleSize += 1;
+        }
+        maxFractleSize -= 1;
+        maxFractleSize /= 2;
+        
+        int fractalCount = (size.x+1)/(maxFractleSize+1);
+        int randWall;
+
+        std::cout << size.x << "/" << maxFractleSize << "=" << fractalCount << std::endl;
+
+        // Copy Side
+        for (int i = 0; i < fractalCount; i++ ){
+            for (int x = 1; x <= maxFractleSize; x++) {
+                for (int y = 1; y <= maxFractleSize; y++) {
+                    if (grid[x][y]) {
+                        grid[x+(i*(maxFractleSize+1))][y+size.y+1] = true;
+                        drawQueue.push(DrawElement(x+(i*(maxFractleSize+1)), y+size.y+1, WHITE));
+                    }
+                }
+            }
+            randWall = (rand()%(maxFractleSize/2))*2+1;
+            grid[randWall+((i*(maxFractleSize+1)))][size.y+1] = true;
+            drawQueue.push(DrawElement(randWall+((i*(maxFractleSize+1))),1+size.y, WHITE));
+        }
+
+        vector.pop_back();
+        vector.push_back(Vec2(size.x,size.y+maxFractleSize+1));
+    }
+
     return true;
 }
 
