@@ -1,6 +1,6 @@
-#include "maze.h"
+#include "gridMaze.h"
 
-Maze::Maze(int width, int height, int gridSize, int seed) : width(width), height(height), gridSize(gridSize), seed(seed) {
+GridMaze::GridMaze(int width, int height, int gridSize, int seed) : width(width), height(height), gridSize(gridSize), seed(seed) {
     
     grid = new bool*[width];
     // BFSIndex = new int*[width];
@@ -22,7 +22,7 @@ Maze::Maze(int width, int height, int gridSize, int seed) : width(width), height
     finish = start;
 };
 
-void Maze::Start() {
+void GridMaze::Start() {
     srand(seed);
 
     InitWindow(width*gridSize, height*gridSize, "Hmmf's Mazes");
@@ -93,9 +93,11 @@ void Maze::Start() {
     // PrintToConsole();
     // stack.push(start);
     // for (int i = 0; i < 20; i++) SolveMouse();
+
+    CloseWindow();
 }
 
-void Maze::Reset() {
+void GridMaze::Reset() {
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             grid[x][y] = false;
@@ -111,7 +113,7 @@ void Maze::Reset() {
     
 };
 
-void Maze::ResetScreen() {
+void GridMaze::ResetScreen() {
     BeginDrawing();
     ClearBackground(BLACK);
     EndDrawing();
@@ -120,7 +122,7 @@ void Maze::ResetScreen() {
     EndDrawing();
 };
 
-void Maze::ResetComplexGrid() {
+void GridMaze::ResetComplexGrid() {
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             ComplexGrid[x][y].id = -1;
@@ -130,7 +132,7 @@ void Maze::ResetComplexGrid() {
     }
 }
 
-void Maze::PrintToConsole() {
+void GridMaze::PrintToConsole() {
     std::cout << std::endl;
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -140,7 +142,7 @@ void Maze::PrintToConsole() {
     }
 }
 
-void Maze::Generate() {
+void GridMaze::Generate() {
     Reset();
     stack.push(start);
     
@@ -174,7 +176,7 @@ void Maze::Generate() {
     solved = false;
 }
 
-void Maze::Solve() {
+void GridMaze::Solve() {
     if (!mouseSolving) stack.push(start);
 
     int randSolvID = rand()%3;
@@ -215,7 +217,7 @@ void Maze::Solve() {
 
 }
 
-bool Maze::Draw(int frameCount) {
+bool GridMaze::Draw(int frameCount) {
     BeginDrawing();
     DrawElement nextElement;
 
@@ -241,7 +243,7 @@ bool Maze::Draw(int frameCount) {
     return true;
 }
 
-bool Maze::InBound(Vec2 pos) {
+bool GridMaze::InBound(Vec2 pos) {
     return (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height);
 }
 
@@ -252,7 +254,7 @@ bool Maze::InBound(Vec2 pos) {
 // 20 21 22 23 24
 // id: 1=GridDFS 2=LWDFS
 // 3= LTDFS 4= URDL
-bool* Maze::GetNeighbours(Vec2 pos, bool generating, int id) {
+bool* GridMaze::GetNeighbours(Vec2 pos, bool generating, int id) {
     bool* neighbours = new bool[25]{false};
 
     int size = 0;
@@ -299,7 +301,7 @@ bool* Maze::GetNeighbours(Vec2 pos, bool generating, int id) {
     return neighbours;
 }
 
-void Maze::GridStart() {
+void GridMaze::GridStart() {
     stack.pop();
     if (start.x == 0 || start.x == width-1) {
         if (start.y % 2 != 1) start.y -= 1;
@@ -313,7 +315,7 @@ void Maze::GridStart() {
     grid[start.x][start.y] = true;
 }
 
-void Maze::GenFinish() {
+void GridMaze::GenFinish() {
     std::vector<int> canditates = {0,1,2,3};
     if (start.x == 0) canditates.erase(canditates.begin() + 0);
     if (start.x == width-1) canditates.erase(canditates.begin() + 1);
@@ -343,7 +345,7 @@ void Maze::GenFinish() {
     grid[finish.x][finish.y] = true;
 }
 
-bool Maze::GenGridDFS() {
+bool GridMaze::GenGridDFS() {
     if (stack.size() == 0) return false;
     else if (stack.size() == 1) GridStart();
 
@@ -373,7 +375,7 @@ bool Maze::GenGridDFS() {
     return true;
 }
 
-bool Maze::GenLooseWideDFS() {
+bool GridMaze::GenLooseWideDFS() {
     if (stack.size() == 0) return false;
 
     Vec2 pos = stack.top();
@@ -402,7 +404,7 @@ bool Maze::GenLooseWideDFS() {
 
 }
 
-bool Maze::GenLooseTightDFS() {
+bool GridMaze::GenLooseTightDFS() {
     if (stack.size() == 0) return false;
 
     Vec2 pos = stack.top();
@@ -431,7 +433,7 @@ bool Maze::GenLooseTightDFS() {
 
 }
 
-bool Maze::GenKruskals() {
+bool GridMaze::GenKruskals() {
     if (stack.size() == 1) {
         GridStart();
         stack.pop();
@@ -494,7 +496,7 @@ bool Maze::GenKruskals() {
     return true;
 }
 
-bool Maze::GenPrims() {
+bool GridMaze::GenPrims() {
     if (stack.size() != 0) {
         GridStart();
         Vec2 top = stack.top();
@@ -552,7 +554,7 @@ bool Maze::GenPrims() {
     return true;
 }
 
-bool Maze::SolveDFS() {
+bool GridMaze::SolveDFS() {
     if (stack.size() == 0) return false;
 
     Vec2 pos = stack.top();
@@ -582,7 +584,7 @@ bool Maze::SolveDFS() {
     return true;
 }
 
-bool Maze::SolveBFS() {
+bool GridMaze::SolveBFS() {
     if (stack.size() != 0) {
         queue.push(Vec2(stack.top()));
         stack.pop();
@@ -631,7 +633,7 @@ bool Maze::SolveBFS() {
 
 }
 
-bool Maze::SolveMouse() {
+bool GridMaze::SolveMouse() {
     if (stack.size() != 0) {
         ResetComplexGrid();
         mouse.SetPos(start);
@@ -708,7 +710,7 @@ bool Maze::SolveMouse() {
     return true;
 }
 
-bool Maze::SolveRHWall() {
+bool GridMaze::SolveRHWall() {
     if (stack.size() != 0) {
         mouse.SetPos(start);
         stack.pop();
@@ -796,7 +798,7 @@ bool Maze::SolveRHWall() {
     return true;
 }
 
-bool Maze::SolveLHWall() {
+bool GridMaze::SolveLHWall() {
     if (stack.size() != 0) {
         // ResetComplexGrid();
         mouse.SetPos(start);
