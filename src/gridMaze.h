@@ -130,6 +130,8 @@ class GridMaze {
         std::queue<DrawElement> drawQueue;
         std::queue<DrawElement> drawBuffer;
 
+        bool wilsonsQuicken = false;
+
         void Reset();
         void ResetScreen();
         void ResetComplexGrid();
@@ -151,6 +153,7 @@ class GridMaze {
         bool GenKruskals();
         bool GenPrims();
         bool GenRecusiveDivision(Vec2 topLeft = Vec2(-1,-1), Vec2 bottomRight = Vec2(-1,-1));
+        bool GenWilsons();
 
         bool SolveDFS();
         bool SolveBFS();

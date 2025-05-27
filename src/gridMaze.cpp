@@ -30,6 +30,12 @@ void GridMaze::Start() {
 
     int frameCount = 0;
 
+    // pausedDrawFrequency = drawFrequency;
+    // drawFrequency = 0;
+    // stack.push(start);
+
+    ResetScreen();
+
     while (!WindowShouldClose()) {
         if (IsKeyPressed(KEY_RIGHT)) {
             if (drawFrequency != 1) {
@@ -67,6 +73,7 @@ void GridMaze::Start() {
             else if (drawFrequency == 0) drawFrequency = pausedDrawFrequency;
         }
         if (IsKeyPressed(KEY_SPACE)) {
+            // GenWilsons();
             int tempDrawPerFrame = drawPerFrame;
             int tempDrawFrequency = drawFrequency;
             drawPerFrame = 1;
@@ -75,6 +82,8 @@ void GridMaze::Start() {
             drawPerFrame = tempDrawPerFrame;
             drawFrequency = tempDrawFrequency;
         }
+
+        // Draw(frameCount++);
 
         if (!generated && frameCount >= 0) Generate();
         
@@ -89,7 +98,8 @@ void GridMaze::Start() {
     }
 
     // stack.push(start);
-    // while (GenRecusiveDivision());
+    // GenWilsons();
+    // // while (GenWilsons());
     // PrintToConsole();
 
     CloseWindow();
@@ -144,8 +154,8 @@ void GridMaze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%4;
-    randGenID=3;
+    int randGenID = rand()%5;
+    // randGenID=4;
 
     functionTimeSeconds = (time(nullptr));
     functionTimeMiliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -177,6 +187,10 @@ void GridMaze::Generate() {
         std::cout << "Starting Gen RecursiveDivision" << std::endl;
         while (GenRecusiveDivision());
         SetWindowTitle("Hmmf's Maze : Generator : Recursive Division ALgorithm");
+    } else if (randGenID == 4) {
+        std::cout << "Starting Gen Wilsons" << std::endl;
+        while (GenWilsons());
+        SetWindowTitle("Hmmf's Maze : Generator : Wilsons ALgorithm");
     }
 
     std::cout << "Took:" << time(nullptr)-functionTimeSeconds << "s || " 
@@ -686,6 +700,107 @@ bool GridMaze::GenRecusiveDivision(Vec2 topLeft, Vec2 bottomRight) {
     GenRecusiveDivision(Vec2(topLeft.x + xWall + 1, topLeft.y + yWall + 1), bottomRight);
 
     return false;
+}
+
+bool GridMaze::GenWilsons() {
+    if (stack.size() == 1 && stack.top().x == start.x && stack.top().y == start.y) {
+        GridStart();
+        stack.pop();
+        for (int x = 1; x < width; x+=2) {
+            for (int y = 1; y < height; y+=2) {
+                vector.push_back(Vec2(x,y));
+            }
+        }
+
+        std::shuffle(vector.begin(), vector.end(), std::default_random_engine());
+        while(vector.size() > 0) {
+            queue.push(vector.back());
+            vector.pop_back();
+        }
+
+        if (queue.size() >= 50000) {
+            std::cout<<"Quickening Wilsons"<<std::endl;
+            wilsonsQuicken = true;
+        } else {
+            std::cout<<"Regular Wilsons"<<std::endl;
+            wilsonsQuicken = false;
+            int randx = rand()%(width/2)*2+1;
+            int randy = rand()%(height/2)*2+1;
+
+            drawQueue.push(DrawElement(randx, randy, WHITE));
+            grid[randx][randy] = true;
+        }
+    }
+
+    if (vector.size() == 0) {
+
+        if (queue.size() == 0) return false;
+
+        Vec2 pos = queue.front();
+        queue.pop();
+
+        if (grid[pos.x][pos.y]) return true;
+
+        vector.push_back(pos);
+        drawQueue.push(DrawElement(pos.x,pos.y,LIME));
+    } else {
+        Vec2 pos = vector.back();
+
+        std::vector<Vec2>Directions = {Vec2(-1,0),Vec2(0,-1),Vec2(1,0),Vec2(0,1)};
+        Vec2 randDir = Directions.at(rand()%4);
+
+        if (!InBound(Vec2(randDir.x+randDir.x+pos.x,randDir.y+randDir.y+pos.y))) {
+            return GenWilsons();
+        }
+
+        pos.x += randDir.x;
+        pos.y += randDir.y;
+        if (vector.size() > 2 && vector.at(vector.size()-2).x == pos.x && vector.at(vector.size()-2).y == pos.y) {
+            return GenWilsons();
+        }
+        vector.push_back(pos);
+        drawQueue.push(DrawElement(pos.x,pos.y,GRAY));
+        pos.x += randDir.x;
+        pos.y += randDir.y;
+        drawQueue.push(DrawElement(pos.x,pos.y,BLUE));
+        if (wilsonsQuicken && (time(nullptr)-functionTimeSeconds)==4) {
+            std::cout<<"Quickened Wilsons"<<std::endl;
+            wilsonsQuicken = false;
+            grid[pos.x][pos.y] = true;
+        }
+        bool loop = false;
+
+        if (grid[pos.x][pos.y]) {
+            drawQueue.push(DrawElement(pos.x,pos.y,WHITE));
+            while(vector.size() > 0) {
+                pos = vector.back();
+                vector.pop_back();
+                grid[pos.x][pos.y] = true;
+                drawQueue.push(DrawElement(pos.x,pos.y,WHITE));
+            }
+            return true; 
+        }
+
+        for(int i = 0; i < vector.size(); i+=2) {
+            if (pos.x == vector.at(i).x && pos.y == vector.at(i).y) {
+                Vec2 back;
+                while (vector.size() >= i) {
+                    if (vector.size() == 1) break;
+                    back = vector.back();
+                    drawQueue.push(DrawElement(back.x,back.y,BLACK));
+                    vector.pop_back();
+                }
+                loop=true;
+            }
+        }
+
+        if (!loop) {
+            vector.push_back(pos);
+            drawQueue.push(DrawElement(pos.x,pos.y,GRAY));
+        }
+    }
+    
+    return true;
 }
 
 bool GridMaze::SolveDFS() {
