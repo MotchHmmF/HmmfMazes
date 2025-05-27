@@ -150,6 +150,7 @@ class GridMaze {
         bool GenLooseTightDFS();
         bool GenKruskals();
         bool GenPrims();
+        bool GenRecusiveDivision(Vec2 topLeft = Vec2(-1,-1), Vec2 bottomRight = Vec2(-1,-1));
 
         bool SolveDFS();
         bool SolveBFS();

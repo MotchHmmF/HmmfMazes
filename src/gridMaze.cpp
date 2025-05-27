@@ -87,12 +87,10 @@ void GridMaze::Start() {
             } else generated = false;
         };
     }
+
     // stack.push(start);
-    // while (GenPrims());
-    // // for (int i = 0; i < 20; i++) GenPrims();
+    // while (GenRecusiveDivision());
     // PrintToConsole();
-    // stack.push(start);
-    // for (int i = 0; i < 20; i++) SolveMouse();
 
     CloseWindow();
 }
@@ -146,8 +144,8 @@ void GridMaze::Generate() {
     Reset();
     stack.push(start);
     
-    int randGenID = rand()%3;
-    // randGenID=2;
+    int randGenID = rand()%4;
+    randGenID=3;
 
     functionTimeSeconds = (time(nullptr));
     functionTimeMiliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
@@ -175,6 +173,10 @@ void GridMaze::Generate() {
         std::cout << "Starting Gen Prims" << std::endl;
         while (GenPrims());
         SetWindowTitle("Hmmf's Maze : Generator : Prims Maze Algorithm");
+    } else if (randGenID == 3) {
+        std::cout << "Starting Gen RecursiveDivision" << std::endl;
+        while (GenRecusiveDivision());
+        SetWindowTitle("Hmmf's Maze : Generator : Recursive Division ALgorithm");
     }
 
     std::cout << "Took:" << time(nullptr)-functionTimeSeconds << "s || " 
@@ -182,6 +184,16 @@ void GridMaze::Generate() {
     << "ms" << std::endl;
 
     ResetScreen();
+
+    if (randGenID == 3) {
+        BeginDrawing();
+        DrawRectangle(gridSize,gridSize,(width-2)*gridSize,(height-2)*gridSize,WHITE);
+        EndDrawing();
+        BeginDrawing();
+        DrawRectangle(gridSize,gridSize,(width-2)*gridSize,(height-2)*gridSize,WHITE);
+        EndDrawing();
+    }
+
     GenFinish();
     drawQueue.push(DrawElement(start,GREEN));
     drawQueue.push(DrawElement(finish,RED));
@@ -589,6 +601,91 @@ bool GridMaze::GenPrims() {
     if (neighbours[22]) complexVector.push_back(new ComplexSquare(pos->x,pos->y+2,pos));
 
     return true;
+}
+
+bool GridMaze::GenRecusiveDivision(Vec2 topLeft, Vec2 bottomRight) {
+    if (stack.size() != 0) {
+        GridStart();
+        Vec2 top = stack.top();
+        grid[top.x][top.y] = false;
+        stack.pop();    
+        
+        for (int x = 1; x < width-1; x++) {
+            for (int y = 1; y < height-1; y++) {
+                grid[x][y] = true;
+            }
+        }
+        topLeft = Vec2(1,1);
+        bottomRight = Vec2(width-2,height-2);
+    }
+
+    if (topLeft.x == bottomRight.x || topLeft.y == bottomRight.y) return false;
+
+    int chamberWidth = bottomRight.x-topLeft.x;
+    int chamberHeight = bottomRight.y-topLeft.y;
+
+    int xWall = (rand()%chamberWidth) / 2 * 2 + 1;
+    int yWall = (rand()%chamberHeight) / 2 * 2 + 1;
+
+    for (int stepY = topLeft.y; stepY <= bottomRight.y; stepY++) {
+        if (stepY == 0) {
+            PrintToConsole();
+            std::cout << "topLeft (" << topLeft.x << "," << topLeft.y << ") | bottomRight (" << bottomRight.x << "," << bottomRight.y << ")" << std::endl;
+            std::cout << "xWall:" << xWall << "  yWall:" << yWall << std::endl;
+            std::cout << "Break Here" << std::endl;
+        }
+        drawQueue.push(DrawElement(topLeft.x + xWall, stepY, BLACK));
+        grid[topLeft.x + xWall][stepY] = false;
+    }
+
+    for (int stepX = topLeft.x; stepX <= bottomRight.x; stepX++) {
+        if (topLeft.y+yWall == 0) {
+            PrintToConsole();
+            std::cout << "topLeft (" << topLeft.x << "," << topLeft.y << ") | bottomRight (" << bottomRight.x << "," << bottomRight.y << ")" << std::endl;
+            std::cout << "xWall:" << xWall << "  yWall:" << yWall << std::endl;
+            std::cout << "Break Here" << std::endl;
+        }
+        drawQueue.push(DrawElement(stepX, topLeft.y + yWall, BLACK));
+        grid[stepX][topLeft.y+yWall] = false;
+    }
+
+    int randNoWallBreak = rand()%4;
+    int wallBreak = 0;
+    // Left of xWall
+    if (randNoWallBreak != 0) {
+        wallBreak = (rand() % xWall) / 2 * 2;
+        drawQueue.push(DrawElement(topLeft.x + wallBreak, topLeft.y + yWall, WHITE));
+        grid[topLeft.x + wallBreak][topLeft.y + yWall] = true;
+    }
+    // Right of xWall
+    if (randNoWallBreak != 1) {
+        wallBreak = (rand() % (chamberWidth-xWall)) / 2 * 2 + xWall + 1;
+        drawQueue.push(DrawElement(topLeft.x + wallBreak, topLeft.y + yWall, WHITE));
+        grid[topLeft.x + wallBreak][topLeft.y + yWall] = true;
+    }
+    // Up from yWall
+    if (randNoWallBreak != 2) {
+        wallBreak = (rand() % yWall) / 2 * 2;
+        drawQueue.push(DrawElement(topLeft.x + xWall, topLeft.y + wallBreak, WHITE));
+        grid[topLeft.x + xWall][topLeft.y + wallBreak] = true;
+    }
+    // Down from yWall
+    if (randNoWallBreak != 3) {
+        wallBreak = (rand() % (chamberHeight - yWall)) / 2 * 2 + yWall + 1;
+        drawQueue.push(DrawElement(topLeft.x + xWall, topLeft.y + wallBreak, WHITE));
+        grid[topLeft.x + xWall][topLeft.y + wallBreak] = true;
+    }
+    // Recursive calling
+    // TopLeft
+    GenRecusiveDivision(topLeft, Vec2(topLeft.x + xWall - 1, topLeft.y + yWall - 1));
+    // TopRight
+    GenRecusiveDivision(Vec2(topLeft.x + xWall + 1, topLeft.y), Vec2(bottomRight.x, topLeft.y + yWall - 1));
+    // Bottom Left
+    GenRecusiveDivision(Vec2(topLeft.x, topLeft.y + yWall + 1), Vec2(topLeft.x + xWall - 1, bottomRight.y));
+    // Bottom Right
+    GenRecusiveDivision(Vec2(topLeft.x + xWall + 1, topLeft.y + yWall + 1), bottomRight);
+
+    return false;
 }
 
 bool GridMaze::SolveDFS() {

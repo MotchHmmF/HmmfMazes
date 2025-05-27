@@ -3,7 +3,7 @@
 #include "gridMaze.h"
 
 int main() {
-    int width = 1801;
+    int width = 1001;
     int height = 1001;
     int gridSize = 1;
 
@@ -17,7 +17,5 @@ int main() {
         GridMaze gridMaze(width,height,gridSize);
         gridMaze.Start();
     }
-
-    
 
 }
