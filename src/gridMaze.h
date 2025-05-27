@@ -7,6 +7,7 @@
 #include <queue>
 #include <algorithm>
 #include <random>
+#include <chrono>
 // #include <bits/stdc++.h>
 #include "vectors.h"
 
@@ -120,6 +121,9 @@ class GridMaze {
 
         ComplexSquare** ComplexGrid;
         Mouse mouse;
+        
+        time_t functionTimeSeconds;
+        long long functionTimeMiliSeconds;
 
         bool generated = false, solved = false, mouseSolving = false;
         int drawFrequency = 1, drawPerFrame = 1, pausedDrawFrequency = 0;

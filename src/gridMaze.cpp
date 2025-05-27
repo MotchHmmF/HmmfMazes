@@ -147,26 +147,39 @@ void GridMaze::Generate() {
     stack.push(start);
     
     int randGenID = rand()%3;
+    // randGenID=2;
+
+    functionTimeSeconds = (time(nullptr));
+    functionTimeMiliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
     if (randGenID == 0) {
         randGenID = rand() % 3;
         if (randGenID == 0) {
+            std::cout << "Starting Gen GDFS" << std::endl;
             while (GenGridDFS());
             SetWindowTitle("Hmmf's Maze : Generator : Grid Depth First Search");
         } else if (randGenID == 1) {
+            std::cout << "Starting Gen LTDFS" << std::endl;
             while (GenLooseTightDFS());
             SetWindowTitle("Hmmf's Maze : Generator : Loose Tight Depth First Search");
         } else if (randGenID == 2) {
+            std::cout << "Starting Gen LWDFS" << std::endl;
             while (GenLooseWideDFS());
             SetWindowTitle("Hmmf's Maze : Generator : Loose Wide Depth First Search");
         }
     } else if (randGenID == 1) {
+        std::cout << "Starting Gen Kruskals" << std::endl;
         while (GenKruskals());
         SetWindowTitle("Hmmf's Maze : Generator : Kruskals Maze Algorithm");
     } else if (randGenID == 2) {
+        std::cout << "Starting Gen Prims" << std::endl;
         while (GenPrims());
         SetWindowTitle("Hmmf's Maze : Generator : Prims Maze Algorithm");
     }
+
+    std::cout << "Took:" << time(nullptr)-functionTimeSeconds << "s || " 
+    << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - functionTimeMiliSeconds 
+    << "ms" << std::endl;
 
     ResetScreen();
     GenFinish();
@@ -177,43 +190,67 @@ void GridMaze::Generate() {
 }
 
 void GridMaze::Solve() {
-    if (!mouseSolving) stack.push(start);
+    if (!mouseSolving) {
+        stack.push(start);
+        functionTimeSeconds = (time(nullptr));
+        functionTimeMiliSeconds = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    }
 
-    int randSolvID = rand()%3;
+    int randSolvID = rand()%4;
     // randSolvID = 2;
 
     if (mouseSolving) randSolvID = 3;
 
     if (randSolvID == 0) {
+        std::cout << "Starting Solve DFS" << std::endl;
         while(SolveDFS());
         SetWindowTitle("Hmmf's Maze : Solver : Depth First Search");
     } else if (randSolvID == 1) {
+        std::cout << "Starting Solve BFS" << std::endl;
         ResetComplexGrid();
         while(SolveBFS());
         SetWindowTitle("Hmmf's Maze : Solver : Breadth First Search");
     } else if (randSolvID == 2) {
         randSolvID = rand()%2;
         if (randSolvID == 0) {
+            std::cout << "Starting Solve RHWF" << std::endl;
             while(SolveRHWall());
             SetWindowTitle("Hmmf's Maze : Solver : Right Hand Wall Follower");
         } else {
+            std::cout << "Starting LHWF" << std::endl;
             while(SolveLHWall());
             SetWindowTitle("Hmmf's Maze : Solver : Left Hand Wall Follower");
         }
-        
     } else if (randSolvID == 3) {
-        // while(SolveMouse());
+        if (mouseSolving != true) {
+            stack.push(start);
+            std::cout << "Starting Solve Mouse" << std::endl;
+            functionTimeSeconds = static_cast<unsigned int>(time(nullptr));
+        }
         mouseSolving = true;
         for (int _ = 0; _ < drawPerFrame; _++) {
             if (!SolveMouse()) {
+                std::cout<<"It made it here"<< stack.size() << std::endl;
                 mouseSolving = false;
                 break;
             }
         }
+        
+
         SetWindowTitle("Hmmf's Maze : Solver : Randomised Mouse Search");
+        // if (static_cast<unsigned int>(time(nullptr)) - functionTimeSeconds > 30) {
+        //     std::cout << "Mouse solver took longer than 30s and gave up" << std::endl;
+        //     solved = true;
+        //     mouseSolving=false;
+        // }
     }
     
-    if (!mouseSolving) solved = true;
+    if (!mouseSolving) {
+        std::cout << "Took:" << time(nullptr)-functionTimeSeconds << "s || " 
+        << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - functionTimeMiliSeconds 
+        << "ms" << std::endl;
+        solved = true;
+    }
 
 }
 
@@ -669,7 +706,6 @@ bool GridMaze::SolveMouse() {
         ComplexGrid[mouse.x][mouse.y].gridColour = mousePath;
     
         drawQueue.push(DrawElement(mouse.x, mouse.y, mousePath));
-        if (drawQueue.size() % 1000000 == 0) std::cout << drawQueue.size() << "  ";
 
     }
 
@@ -702,7 +738,7 @@ bool GridMaze::SolveMouse() {
     }
 
     if (!(mouse.x == start.x && mouse.y == start.y)) {
-        if (width*height < 1000) {
+        if (width*height < 500) {
             drawQueue.push(DrawElement(mouse.x, mouse.y, GRAY));
         }
     }
